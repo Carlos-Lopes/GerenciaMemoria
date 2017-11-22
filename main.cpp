@@ -180,38 +180,28 @@ void *worst_fit(int size) {
 }
 
 void free(struct memory *address) {
-    auto *iterator = _memory;
-    auto *aux = address - sizeof(struct memory);
     struct memory *previous = nullptr;
+    auto *iterator = _memory;
+    address -= sizeof(struct memory);
+    address->size = address->size * -1;
 
-    while (iterator != nullptr && iterator != aux)
-        iterator = iterator->next;
-
-    if (iterator == nullptr || (iterator->size > 0)) {
-        std::cout << "Invalid Address" << std::endl;
-        return;
-    }
-
-    aux->size = aux->size * -1;
-    iterator = _memory;
     while (iterator != nullptr) {
         if (iterator == address) {
-            if (previous->size > 0) {
-                previous->size += iterator->size + sizeof(struct memory);
-                previous->next = iterator->next;
-                if (_next == iterator)
-                    _next = previous;
-            } else
-                previous = previous->next;
-
-            iterator = iterator->next;
-            if (iterator->size > 0) {
-                previous->size += iterator->size + sizeof(struct memory);
-                previous->next = iterator->next;
-                if (_next == iterator)
-                    _next = previous;
+            if (previous != nullptr) {
+                if (previous->size > 0) {
+                    previous->size += iterator->size;
+                    previous->next = iterator->next;
+                    if (_next == iterator)
+                        _next = previous;
+                }
+            } else {
+                if (iterator->size > 0) {
+                    iterator->size += iterator->next->size;
+                    iterator->next = iterator->next->next;
+                }
             }
         }
+
         previous = iterator;
         iterator = iterator->next;
     }

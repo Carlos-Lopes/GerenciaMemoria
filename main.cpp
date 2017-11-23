@@ -5,7 +5,7 @@ struct memory {
     int size;
 };
 
-unsigned int memory_size = 1024;
+unsigned int memory_size = 256;
 struct memory *_memory = nullptr;
 
 void begin_memory() {
@@ -112,70 +112,74 @@ void *next_fit(int size) {
 void *best_fit(int size) {
     struct memory *address = nullptr;
     struct memory *best = nullptr;
-    struct memory *previous_best = nullptr;
+    struct memory *next = nullptr;
     auto *iterator = _memory;
-    int _size = size + sizeof(struct memory);
 
     while (iterator != nullptr) {
-        if (best == nullptr && iterator->size > 0)
-            best = iterator;
-        else if (((iterator->size >= _size) || (iterator->size >= size)))
-            best = iterator;
+        if (iterator->size >= size) {
+            if (best == nullptr)
+                best = iterator;
 
+            if (iterator->size < best->size)
+                best = iterator;
+        }
         iterator = iterator->next;
     }
 
-    if (best->size >= _size) {
-        previous_best = best;
-        best += sizeof(struct memory) + size;
-        best->size = previous_best->size - size - (sizeof(struct memory));
-        best->next = previous_best->next;
-        previous_best->next = best;
-        previous_best->size = 0 - size;
-
-        address = previous_best + sizeof(struct memory);
-    } else {
-        if (best->size > size) {
-            best->size = best->size * -1;
-            address = best + sizeof(struct memory);
-        }
+    if (best->size == size) {
+        best->size = best->size * -1;
+        address = best + sizeof(struct memory);
     }
+
+    if (best->size > size) {
+        next = best;
+        best += sizeof(struct memory) + size;
+        best->size = next->size - size;
+        best->next = next->next;
+        next->next = best;
+        next->size = 0 - size;
+
+        address = next + sizeof(struct memory);
+    }
+
     return address;
 }
 
 void *worst_fit(int size) {
     struct memory *address = nullptr;
     struct memory *worst = nullptr;
-    struct memory *previos_best = nullptr;
+    struct memory *next = nullptr;
     auto *iterator = _memory;
-    int _size = size + sizeof(struct memory);
 
     while (iterator != nullptr) {
-        if (worst == nullptr && iterator->size > 0) {
-            worst = iterator;
-        } else {
-            if (((iterator->size >= _size) || (iterator->size >= size)) && (iterator->size > worst->size)) {
+        if (iterator->size >= size) {
+            if (worst == nullptr)
                 worst = iterator;
-            }
+
+            if (iterator->size > worst->size)
+                worst = iterator;
         }
         iterator = iterator->next;
     }
 
-    if (worst->size >= _size) {
-        previos_best = worst;
-        worst += sizeof(struct memory) + size;
-        worst->size = previos_best->size - size - (sizeof(struct memory));
-        worst->next = previos_best->next;
-        previos_best->next = worst;
-        previos_best->size = 0 - size;
+    std::cout << "Worst: " << worst->size << std::endl;
 
-        address = previos_best + sizeof(struct memory);
-    } else {
-        if (worst->size > size) {
-            worst->size = worst->size * -1;;
-            address = worst + sizeof(struct memory);
-        }
+    if (worst->size == size) {
+        worst->size = worst->size * -1;
+        address = worst + sizeof(struct memory);
     }
+
+    if (worst->size > size) {
+        next = worst;
+        worst += sizeof(struct memory) + size;
+        worst->size = next->size - size;
+        worst->next = next->next;
+        next->next = worst;
+        next->size = 0 - size;
+
+        address = next + sizeof(struct memory);
+    }
+
     return address;
 }
 
@@ -209,10 +213,6 @@ void free(struct memory *address) {
 
 int main(int argc, char *argv[]) {
     begin_memory();
-    auto first_address = (struct memory *) first_fit(10);
-    auto next_address = (struct memory *) next_fit(20);
-    auto best_address = (struct memory *) best_fit(8);
-    auto worst_address = (struct memory *) worst_fit(15);
     show_memory();
     return 0;
 }
